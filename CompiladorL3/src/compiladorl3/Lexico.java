@@ -147,7 +147,7 @@ public class Lexico {
                                 if (num.contains(".")) {
                                     return new Token("Decimal", num);
                                 } else {
-                                    return new Token("Integral", num);
+                                    return new Token("Inteiro", num);
                                 }
                             }
                         }
@@ -175,20 +175,15 @@ public class Lexico {
                         }
                     } else {
                         c = lerNextChar();
-                        return new Token("Erro", "Não definido " + c);
+                        return new Token(c + "Erro", "Não definido");
                     }
                 }
             }
         }
     }
-
+    
     char lerNextChar() {
-        try {
-            return (char) reader.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return (char) (-1);
+        return this.conteudo[this.indiceConteudo++];
     }
 
     boolean ehNumero(char c) {
