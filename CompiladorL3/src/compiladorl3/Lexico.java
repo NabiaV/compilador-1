@@ -1,147 +1,212 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package compiladorl3;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/**
- *
- * @author tarci
- */
 public class Lexico {
+
+    BufferedReader reader;
+    char c;
+    List<Token> tokenList = new ArrayList<>();
+
     private char[] conteudo;
     private int indiceConteudo;
-    
-    public Lexico(String caminhoCodigoFonte){
-        try {
-            String conteudoStr;
-            conteudoStr = new String(Files.readAllBytes(Paths.get(caminhoCodigoFonte)));
-            this.conteudo = conteudoStr.toCharArray();
-            this.indiceConteudo = 0;                        
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }        
+
+    public static final String PALAVRAS_CHAVES[] = new String[]{
+        "import", "class", "while", "if", "else", "public",
+        "private", "protected", "switch", "case", "super",
+        "static", "implements", "interface", "package", "new",
+        "continue", "try", "this", "final", "byte", "int", "char",
+        "String", "float", "double", "boolean", "return"};
+
+
+        public Lexico(String caminhoCodigoFonte){
+            try {
+                String conteudoStr;
+                conteudoStr = new String(Files.readAllBytes(Paths.get(caminhoCodigoFonte)));
+                this.conteudo = conteudoStr.toCharArray();
+                this.indiceConteudo = 0;                        
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }        
+        }
+
+    List<Token> generateTokens() {
+        Token token = lerNextToken();
+        while (token != null) {
+            tokenList.add(token);
+            token = lerNextToken();
+        }
+        return tokenList;
     }
-    
-    //Retorna próximo char
-    private char nextChar(){
-        return this.conteudo[this.indiceConteudo++];
-    }
-    
-    //Verifica existe próximo char ou chegou ao final do código fonte
-    private boolean hasNextChar(){
-        return indiceConteudo < this.conteudo.length;
-    }
-    
-    //Retrocede o índice que aponta para o "char da vez" em uma unidade
-    private void back(){
-        this.indiceConteudo--;
-    }
-    
-    //Identificar se char é letra minúscula    
-    private boolean isLetra(char c){
-        return (c >= 'a') && (c <= 'z');
-    }
-    
-    //Identificar se char é dígito
-    private boolean isDigito(char c){
-        return (c >= '0') && (c <= '9');
-    }
-    
-    //Método retorna próximo token válido ou retorna mensagem de erro.
-    public Token nextToken(){
-        Token token = null;
-        char c;
-        int estado = 0;
-        
-        StringBuffer lexema = new StringBuffer();
-        while(this.hasNextChar()){
-            c = this.nextChar();            
-            switch(estado){
-                case 0:
-                    if(c == ' ' || c == '\t' || c == '\n' || c == '\r' ){ //caracteres de espaço em branco ASCII tradicionais 
-                        estado = 0;
-                    }
-                    else if(this.isLetra(c) || c == '_'){
-                        lexema.append(c);
-                        estado = 1;
-                    }
-                    else if(this.isDigito(c)){
-                        lexema.append(c);
-                        estado = 2;
-                    }
-                    else if(c == ')' || 
-                            c == '(' ||
-                            c == '{' ||
-                            c == '}' ||
-                            c == ',' ||
-                            c == ';'){
-                        lexema.append(c);
-                        estado = 5;
-                    }else if(c == '$'){
-                        lexema.append(c);
-                        estado = 99;
-                        this.back();
-                    }else{
-                        lexema.append(c);
-                        throw new RuntimeException("Erro: token inválido \"" + lexema.toString() + "\"");
-                    }
-                    break;
-                case 1:
-                    if(this.isLetra(c) || this.isDigito(c) || c == '_'){
-                        lexema.append(c);
-                        estado = 1;                        
-                    }else{
-                        this.back();
-                        return new Token(lexema.toString(), Token.TIPO_IDENTIFICADOR);                        
-                    }
-                    break;
-                case 2:
-                    if(this.isDigito(c)){
-                        lexema.append(c);
-                        estado = 2;
-                    }else if(c == '.'){
-                        lexema.append(c);
-                        estado = 3;
-                    }else{
-                        this.back();
-                        return new Token(lexema.toString(), Token.TIPO_INTEIRO);
-                    }
-                    break;
-                case 3:
-                    if(this.isDigito(c)){
-                        lexema.append(c);
-                        estado = 4;
-                    }else{
-                        throw new RuntimeException("Erro: número float inválido \"" + lexema.toString() + "\"");
-                    }
-                    break;
-                case 4:
-                    if(this.isDigito(c)){
-                        lexema.append(c);
-                        estado = 4;
-                    }else{
-                        this.back();
-                        return new Token(lexema.toString(), Token.TIPO_REAL);
-                    }
-                    break;
-                case 5:
-                    this.back();
-                    return new Token(lexema.toString(), Token.TIPO_CARACTER_ESPECIAL); 
-                case 99:
-                    return new Token(lexema.toString(), Token.TIPO_FIM_CODIGO); 
+
+    Token lerNextToken() {
+        int estado = 1;
+
+        while (true) {
+            if (c == (char) (-1)) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return null;
             }
-        }                
-        return token;
-    }   
+
+            switch (estado) {
+                case 1: {
+                    if (c == ' ' || c == '\n' || c == '\t'
+                            || c == '\f' || c == '\b' || c == '\r') {
+                        c = lerNextChar();
+                        continue;
+                    } else if (c == ';') {
+                        c = lerNextChar();
+                        return new Token("Ponto e virgula", ";");
+                    } else if (c == '+') {
+                        c = lerNextChar();
+                        return new Token("Adição", "+");
+                    } else if (c == '-') {
+                        c = lerNextChar();
+                        return new Token("Subtração", "-");
+                    } else if (c == '*') {
+                        c = lerNextChar();
+                        return new Token("Multiplicação", "*");
+                    } else if (c == '/') {
+                        c = lerNextChar();
+
+                        return new Token("Divisão", "/");
+                    } else if (c == '%') {
+                        c = lerNextChar();
+                        return new Token("Percentagem", "%");
+                    } else if (c == '{') {
+                        c = lerNextChar();
+                        return new Token("Chave esquerda", "{");
+                    } else if (c == '}') {
+                        c = lerNextChar();
+                        return new Token("Chave direita", "}");
+                    } else if (c == '(') {
+                        c = lerNextChar();
+                        return new Token("Parentese esquerdo", "(");
+                    } else if (c == ')') {
+                        c = lerNextChar();
+                        return new Token("Parentese direito", ")");
+                    } else if (c == ',') {
+                        c = lerNextChar();
+                        return new Token("Virgula", ",");
+                    } else if (c == '=') {
+                        c = lerNextChar();
+                        if (c == '=') {
+                            c = lerNextChar();
+                            return new Token("Igualdade", "==");
+                        } else {
+                            return new Token("Operador de atribuição", "=");
+                        }
+                    } else if (c == '!') {
+                        c = lerNextChar();
+                        if (c == '=') {
+                            c = lerNextChar();
+                            return new Token("Negação ", "!=");
+                        } else {
+                            return new Token("Não definido", "!");
+                        }
+                    } else if (c == '&') {
+                        c = lerNextChar();
+                        if (c == '&') {
+                            c = lerNextChar();
+                            return new Token("Condicional e", "&&");
+                        } else {
+                            return new Token("Não definido", "&");
+                        }
+                    } else if (c == '|') {
+                        c = lerNextChar();
+                        if (c == '|') {
+                            c = lerNextChar();
+                            return new Token("Condicional ou", "||");
+                        } else {
+                            return new Token("Não definido", "|");
+                        }
+                    } else {
+                        estado = 2;
+                        continue;
+                    }
+
+                }
+                case 2: {
+                    if (ehNumero(c)) {
+                        String num = String.valueOf(c);
+                        for (;;) {
+                            c = lerNextChar();
+                            if (ehNumero(c) || c == '.') {
+                                num += String.valueOf(c);
+                            } else {
+                                if (num.contains(".")) {
+                                    return new Token("Decimal", num);
+                                } else {
+                                    return new Token("Integral", num);
+                                }
+                            }
+                        }
+                    } else {
+                        estado = 3;
+                    }
+                }
+                case 3: {
+                    if (ehLetra(c) || c == '_') {
+                        String word = String.valueOf(estado);
+                        for (;;) {
+                            c = lerNextChar();
+                            if (ehLetra(c) || c == '_' || ehNumero(c)) {
+                                word += String.valueOf(c);
+
+                            } else {
+                                List palavras_chaves = Arrays.asList(PALAVRAS_CHAVES);
+
+                                if (palavras_chaves.contains(word)) {
+                                    return new Token("Palavra chave", word);
+                                } else {
+                                    return new Token("Identificador", word);
+                                }
+                            }
+                        }
+                    } else {
+                        c = lerNextChar();
+                        return new Token("Erro", "Não definido " + c);
+                    }
+                }
+            }
+        }
+    }
+
+    char lerNextChar() {
+        try {
+            return (char) reader.read();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return (char) (-1);
+    }
+
+    boolean ehNumero(char c) {
+        if (c >= '0' && c <= '9') {
+            return true;
+        }
+
+        return false;
+    }
+
+    boolean ehLetra(char c) {
+        if (c >= 'a' && c <= 'z') {
+            return true;
+        }
+        if (c >= 'A' && c <= 'Z') {
+            return true;
+        }
+
+        return false;
+    }
 }
