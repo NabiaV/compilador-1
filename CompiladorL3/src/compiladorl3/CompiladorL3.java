@@ -15,7 +15,6 @@ public class CompiladorL3 {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
         Lexico lexico = new Lexico("/workspace/compilador-1/CompiladorL3/src/compiladorl3/codigo.txt");
         Token t = null;
         while((t = lexico.lerNextToken()) != null){

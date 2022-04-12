@@ -13,6 +13,10 @@ public class Lexico {
     BufferedReader reader;
     char c;
     List<Token> tokenList = new ArrayList<>();
+
+    private char[] conteudo;
+    private int indiceConteudo;
+
     public static final String PALAVRAS_CHAVES[] = new String[]{
         "import", "class", "while", "if", "else", "public",
         "private", "protected", "switch", "case", "super",
@@ -20,8 +24,6 @@ public class Lexico {
         "continue", "try", "this", "final", "byte", "int", "char",
         "String", "float", "double", "boolean", "return"};
 
-        private char[] conteudo;
-        private int indiceConteudo;
 
         public Lexico(String caminhoCodigoFonte){
             try {
