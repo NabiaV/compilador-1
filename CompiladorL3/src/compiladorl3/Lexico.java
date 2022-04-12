@@ -175,20 +175,29 @@ public class Lexico {
                         }
                     } else {
                         c = lerNextChar();
-                        return new Token("Erro", "Não definido " + c);
+                        return new Token(c + "Erro", "Não definido");
                     }
                 }
             }
         }
     }
+    
+    private boolean hasNextChar(){
+        return indiceConteudo < this.conteudo.length;
+    }
+    
+    private void back(){
+        this.indiceConteudo--;
+    }
 
     char lerNextChar() {
-        try {
-            return (char) reader.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return (char) (-1);
+        return this.conteudo[this.indiceConteudo++];
+       // try {
+        //return (char) reader.read();
+       // } catch (IOException e) {
+       //     e.printStackTrace();
+        //}
+       // return (char) (-1);
     }
 
     boolean ehNumero(char c) {
