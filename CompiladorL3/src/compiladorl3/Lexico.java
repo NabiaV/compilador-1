@@ -167,9 +167,9 @@ public class Lexico {
                                 List palavras_chaves = Arrays.asList(PALAVRAS_CHAVES);
 
                                 if (palavras_chaves.contains(word)) {
-                                    return new Token("Palavra chave", word);
+                                    return new Token("Palavra", word);
                                 } else {
-                                    return new Token("Identificador", word);
+                                    return new Token("Palavra reservada", word);
                                 }
                             }
                         }
